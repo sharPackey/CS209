@@ -4,14 +4,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
-/**
- * This is just a demo for you, please run it on JDK17.
- * This is just a demo, and you can extend and implement functions
- * based on this demo, or implement it in a different way.
- */
 public class OnlineCoursesAnalyzer {
 
     List<Course> courses = new ArrayList<>();
@@ -20,17 +14,22 @@ public class OnlineCoursesAnalyzer {
         BufferedReader br = null;
         String line;
         try {
-            br = new BufferedReader(new FileReader(datasetPath, StandardCharsets.UTF_8));
+            br = new BufferedReader(
+                    new FileReader(datasetPath, StandardCharsets.UTF_8));
             br.readLine();
             while ((line = br.readLine()) != null) {
                 String[] info = line.split(",(?=([^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1);
-                Course course = new Course(info[0], info[1], new Date(info[2]), info[3], info[4], info[5],
-                        Integer.parseInt(info[6]), Integer.parseInt(info[7]), Integer.parseInt(info[8]),
-                        Integer.parseInt(info[9]), Integer.parseInt(info[10]), Double.parseDouble(info[11]),
-                        Double.parseDouble(info[12]), Double.parseDouble(info[13]), Double.parseDouble(info[14]),
-                        Double.parseDouble(info[15]), Double.parseDouble(info[16]), Double.parseDouble(info[17]),
-                        Double.parseDouble(info[18]), Double.parseDouble(info[19]), Double.parseDouble(info[20]),
-                        Double.parseDouble(info[20]), Double.parseDouble(info[21]));
+                Course course = new Course(info[0], info[1],
+                        new Date(info[2]), info[3], info[4], info[5],
+                        Integer.parseInt(info[6]), Integer.parseInt(info[7]),
+                        Integer.parseInt(info[8]), Integer.parseInt(info[9]),
+                        Integer.parseInt(info[10]), Double.parseDouble(info[11]),
+                        Double.parseDouble(info[12]), Double.parseDouble(info[13]),
+                        Double.parseDouble(info[14]), Double.parseDouble(info[15]),
+                        Double.parseDouble(info[16]), Double.parseDouble(info[17]),
+                        Double.parseDouble(info[18]), Double.parseDouble(info[19]),
+                        Double.parseDouble(info[20]), Double.parseDouble(info[21]),
+                        Double.parseDouble(info[22]));
                 courses.add(course);
             }
         } catch (IOException e) {
@@ -48,19 +47,22 @@ public class OnlineCoursesAnalyzer {
 
     //1
     public Map<String, Integer> getPtcpCountByInst() {
-        return courses.stream().collect(
+        List<Course> list1 = new ArrayList<>(courses);
+        return list1.stream().collect(
                 Collectors.groupingBy(Course::getInstitution,
-                        TreeMap::new, Collectors.summingInt(Course::getParticipants)));
+                        TreeMap::new,
+                        Collectors.summingInt(Course::getParticipants)));
     }
 
     //2
     public Map<String, Integer> getPtcpCountByInstAndSubject() {
         List<Course> cc = new ArrayList<>(courses);
+        Map<String, String> qnmd = new HashMap<>();
         for (int i = 0; i < cc.size(); i++) {
-            cc.get(i).institution = cc.get(i).institution + "-" + cc.get(i).subject;
+            cc.get(i).gg = cc.get(i).institution + "-" + cc.get(i).subject;
         }
         Map<String, Integer> map2 = cc.stream().collect(
-                Collectors.groupingBy(Course::getInstitution,
+                Collectors.groupingBy(Course::getGg,
                         Collectors.summingInt(Course::getParticipants)));
         return sortMap(map2);
     }
@@ -86,11 +88,13 @@ public class OnlineCoursesAnalyzer {
                     map3.put(s, o);
                 }
                 if (ff == 1) {
-                    if(!map3.get(s).get(1).contains(cours.title))
+                    if (!map3.get(s).get(1).contains(cours.title)) {
                         map3.get(s).get(1).add(cours.title);
+                    }
                 } else {
-                    if(!map3.get(s).get(0).contains(cours.title))
+                    if (!map3.get(s).get(0).contains(cours.title)) {
                         map3.get(s).get(0).add(cours.title);
+                    }
                 }
             }
         }
@@ -104,15 +108,20 @@ public class OnlineCoursesAnalyzer {
     //4
     public List<String> getCourses(int topK, String by) {
         List<Course> cc = new ArrayList<>(courses);
-        if (by.equals("hours"))
-            cc = cc.stream().sorted(Comparator.comparing(Course::getTotalHours).reversed()).toList();
-        else
-            cc = cc.stream().sorted(Comparator.comparing(Course::getParticipants).reversed()).toList();
+        if (by.equals("hours")) {
+            cc = cc.stream().sorted(
+                    Comparator.comparing(Course::getTotalHours)
+                            .reversed()).toList();
+        } else {
+            cc = cc.stream().sorted(
+                    Comparator.comparing(Course::getParticipants)
+                            .reversed()).toList();
+        }
         List<String> list4 = new ArrayList<>();
-        int k=0;
-        int real=0;
-        while(real<topK){
-            if(!list4.contains(cc.get(k).title)){
+        int k = 0;
+        int real = 0;
+        while (real < topK) {
+            if (!list4.contains(cc.get(k).title)) {
                 list4.add(cc.get(k).title);
                 real++;
             }
@@ -120,25 +129,73 @@ public class OnlineCoursesAnalyzer {
         }
         return list4;
     }
-
     //5
-    public List<String> searchCourses(String courseSubject, double percentAudited, double totalCourseHours) {
+    public List<String> searchCourses(String courseSubject,
+                                      double percentAudited, double totalCourseHours) {
         List<Course> list5 = new ArrayList<>(courses);
-        List<String> answer = new ArrayList<>();
-
-        return answer;
+        return list5.stream()
+                .filter(v -> v.getSubject()
+                        .toLowerCase().contains((courseSubject.toLowerCase())))
+                .filter(u -> u.getPercentAudited() >= percentAudited)
+                .filter(h -> h.getTotalHours() <= totalCourseHours)
+                .map(Course::getTitle)
+                .distinct().sorted(String::compareTo).toList();
     }
 
-    //6
     public List<String> recommendCourses(int age, int gender, int isBachelorOrHigher) {
-        return null;
+        Map<String, Double> numberage = courses.stream().collect(
+                Collectors.groupingBy(Course::getNumber,
+                        Collectors.averagingDouble(Course::getMedianAge))
+        );
+        Map<String, Double> numberMale = courses.stream().collect(
+                Collectors.groupingBy(Course::getNumber,
+                        Collectors.averagingDouble(Course::getPercentMale))
+        );
+        Map<String, Double> numberbachelor = courses.stream().collect(
+                Collectors.groupingBy(Course::getNumber,
+                        Collectors.averagingDouble(Course::getPercentDegree))
+        );
+        Map<String, Double> Titleval = new TreeMap<>();
+        Map<String, String> numberTitle = new HashMap<>();
+        Map<String, List<Course>> numberCourse;
+        numberCourse = courses.stream()
+                .collect(Collectors.groupingBy(Course::getNumber));
+        numberCourse.forEach((s, courses) -> {
+            courses.sort((o1, o2) -> o2.getLaunchDate().compareTo(o1.getLaunchDate()));
+        });
+        numberCourse.forEach((s, courses) -> {
+            numberTitle.put(s, courses.get(0).getTitle());
+        });
+        numberCourse.keySet().forEach(s -> {
+            Titleval.put(numberTitle.get(s),
+                    Math.pow(age - numberage.get(s), 2)
+                            + Math.pow(gender * 100 - numberMale.get(s), 2)
+                            + Math.pow(isBachelorOrHigher * 100 - numberbachelor.get(s), 2));
+        });
+        List<String> ans = new ArrayList<>();
+        List<String> finalans = ans;
+        Titleval.entrySet().stream().sorted((o1, o2) -> {
+            int ansult = o1.getValue().compareTo(o2.getValue());
+            if (ansult == 0) {
+                return o1.getKey().compareTo(o2.getKey());
+            } else {
+                return ansult;
+            }
+        }).forEach(S -> {
+            if (!finalans.contains(S.getKey())) {
+                finalans.add(S.getKey());
+            }
+        });
+        ans = finalans.stream().limit(10).toList();
+        return ans;
     }
 
     public static Map<String, Integer> sortMap(Map<String, Integer> map) {
         List<Map.Entry<String, Integer>> entryList = new ArrayList<>(map.entrySet());
         Collections.sort(entryList, new Comparator<Map.Entry<String, Integer>>() {
             @Override
-            public int compare(Map.Entry<String, Integer> o1, Map.Entry<String, Integer> o2) {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2) {
                 return o2.getValue() - o1.getValue();
             }
         });
@@ -160,6 +217,8 @@ class Course {
     String instructors;
     String subject;
     int year;
+
+    String gg;
     int honorCode;
     int participants;
     int audited;
@@ -177,13 +236,40 @@ class Course {
     double percentFemale;
     double percentDegree;
 
+    public Date getLaunchDate() {
+        return launchDate;
+    }
+
+    public double getPercentDegree() {
+        return percentDegree;
+    }
+
+    public double getMedianAge() {
+        return medianAge;
+    }
+
+    public String getGg() {
+        return gg;
+    }
+
+    public double getPercentMale() {
+        return percentMale;
+    }
+
+    public double getPercentFemale() {
+        return percentFemale;
+    }
+
+    public double getPercentAudited() {
+        return percentAudited;
+    }
 
     public String getInstitution() {
         return institution;
     }
 
-    public int getnumber() {
-        return Integer.parseInt(number);
+    public String getNumber() {
+        return number;
     }
 
     public int getParticipants() {
